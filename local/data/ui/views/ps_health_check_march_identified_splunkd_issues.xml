@@ -1,0 +1,126 @@
+<form>
+  <label>splunkd_issues</label>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label>Timepicker:</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <input type="time" token="loglevel_component">
+        <label></label>
+        <default>
+          <earliest>-60m@m</earliest>
+          <latest>now</latest>
+        </default>
+      </input>
+      <chart>
+        <title>non INFO messages</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd log_level!=INFO | chart count over component by log_level</query>
+          <earliest>$loglevel_component.earliest$</earliest>
+          <latest>$loglevel_component.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-90</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>log level = CRITICAL OR FATAL (last 3 days)</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd log_level=CRIT OR log_level=FATAL | cluster showcount=true | table _raw, cluster_count | sort - cluster_count</query>
+          <earliest>-3d@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>hosts that have issues resolving indexers</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd component=TcpOutputProc Can't find | stats count by host | sort - count</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">undefined</option>
+        <option name="rowNumbers">undefined</option>
+        <option name="drilldown">row</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Issues with script execution</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd component=ExecProcessor
+ log_level!=INFO | cluster showcount=true | table _raw, cluster_count | sort - cluster_count</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">undefined</option>
+        <option name="rowNumbers">undefined</option>
+        <option name="drilldown">row</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>JsonLineBreaker issues (last 3 days)</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd ERROR component=JsonLineBreaker | cluster showcount=true | table _raw, cluster_count | sort - cluster_count</query>
+          <earliest>-3d@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">undefined</option>
+        <option name="rowNumbers">undefined</option>
+        <option name="drilldown">row</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>issues with files monitored (ie they are binary)</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd log_level!=INFO  component=FileClassifierManager log_level=WARN | cluster showcount=true | table _raw, cluster_count | sort - cluster_count</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">undefined</option>
+        <option name="rowNumbers">undefined</option>
+        <option name="drilldown">row</option>
+      </table>
+    </panel>
+  </row>
+</form>

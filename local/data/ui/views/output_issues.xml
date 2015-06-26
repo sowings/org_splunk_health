@@ -1,0 +1,26 @@
+<form script="table_icons_rangemap_now_with_mv.js" stylesheet="table_decorations.css">
+  <label>output_issues</label>
+  <row>
+    <panel>
+      <input type="dropdown" token="fwd_output_issues" searchWhenChanged="true">
+        <label>Show issues only:</label>
+        <choice value="indexer_deviation!=0">yes</choice>
+        <choice value="1==1">no</choice>
+        <default>1==1</default>
+      </input>
+      <table id="tmy_mv_table">
+        <title>Forwarder output issues (last 24 hours) -  forwarders not sending data to all indexers</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd TcpOutputProc Connected | stats dc(idx) AS idx_count values(idx) by host  | eventstats mode(idx_count) AS mode_idx | eval status=if(mode_idx!=idx_count, "elevated!!!deviation found", "low!!!ok")  | eval indexer_deviation=idx_count-mode_idx  | fields - mode* | sort status  | where $fwd_output_issues$</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+</form>

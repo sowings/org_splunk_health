@@ -1,0 +1,26 @@
+<nav search_view="search" color="#6991AC">
+  <view name="overview" default="true" /> 
+  
+  <collection label="Component check">
+    <view source="all" match="ps_health_check_march_"/>
+    <view name="output_issues" />
+  </collection>
+  
+  
+  <collection label="Configuration check">
+    <view name="btool_holistic" />
+    <view name="btool_detail" />
+    <view name="btool_to_review" />
+    <view name="index_time_settings" />
+    <view name="btool_setting_profile" />
+    <view name="suboptimal_config" />
+  </collection>
+  
+  <collection label="Search">
+  	<view name="search" />
+    <view name="data_models" />
+    <view name="reports" />
+    <view name="alerts" />
+    <view name="dashboards" />
+  </collection>
+</nav>

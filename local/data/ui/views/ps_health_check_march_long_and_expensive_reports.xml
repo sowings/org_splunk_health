@@ -1,0 +1,80 @@
+<form>
+  <label>Expensive and long-running reports inventory</label>
+  <description>run_time in seconds</description>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <search id="base_long_expensive_searches">
+    <query>index=_internal sourcetype=scheduler result_count | extract pairdelim=",", kvdelim="=", auto=f | stats avg(result_count) min(result_count) max(result_count), sparkline(avg(result_count)) AS sparkline avg(run_time) min(run_time) max(run_time) sum(run_time) values(eval(if(match(host, "^splunksh(?:1|2|3)$"), "SHC", host))) AS hosts count AS execution_count by savedsearch_name, app | rename savedsearch_name AS title | makemv delim="," values(host)</query>
+    <earliest>$field1.earliest$</earliest>
+    <latest>$field1.latest$</latest>
+  </search>
+  <row>
+    <panel>
+      <table>
+        <title>Long running searches by avg(run_time)</title>
+        <search base="base_long_expensive_searches">
+          <query>| sort - avg(run_time)</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">heatmap</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Long running searches by sum(run_time)</title>
+        <search base="base_long_expensive_searches">
+          <query>| sort - sum(run_time)</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">heatmap</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Scheduled searches that are running in multiple places (SHC is considered 1 host)</title>
+        <search base="base_long_expensive_searches">
+          <query>| eval host_count=mvcount(hosts) | makemv delim="," hosts |  where app!="TA-fire_brigade" AND host_count &gt; 1</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">heatmap</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Searches that are scheduled to run more frequently then they take to finish</title>
+        <search>
+          <query>index=_internal sourcetype=scheduler skipped OR continued | extract pairdelim=",", kvdelim="=", auto=f | search status!="delegated*" status!="success" | stats values(app) values(eval(if(match(host, "^splunksh(?:1|2|3)$"), "SHC", host))) AS hosts count AS execution_count values(status) by savedsearch_name | sort - execution_count</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+</form>

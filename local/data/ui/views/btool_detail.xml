@@ -1,0 +1,199 @@
+<form script="table_icons_rangemap_now_with_mv.js" stylesheet="table_decorations.css">
+  <label>Configuration detail</label>
+  <fieldset submitButton="true">
+    <input type="dropdown" token="splunk_group">
+      <label>DMC Group:</label>
+      <search>
+        <query>| inputlookup assets.csv | stats count by search_group</query>
+      </search>
+      <fieldForLabel>search_group</fieldForLabel>
+      <fieldForValue>search_group</fieldForValue>
+      <default>dmc_group_indexer</default>
+    </input>
+    <input type="dropdown" token="host">
+      <label>Host:</label>
+      <search>
+        <query>| inputlookup assets.csv | where search_group="$splunk_group$" | stats count by host</query>
+      </search>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+    </input>
+    <input type="dropdown" token="conf">
+      <label>Conf:</label>
+      <search>
+        <query>| inputlookup splunk_config_files.csv | rex field=name "(?&lt;conf&gt;[^\.]+)"</query>
+        <earliest>0</earliest>
+      </search>
+      <fieldForLabel>name</fieldForLabel>
+      <fieldForValue>conf</fieldForValue>
+      <default>web</default>
+    </input>
+    <input type="dropdown" token="exclude_default">
+      <label>Exclude system/default:</label>
+      <choice value="NOT match(file, &quot;\/system\/default\/&quot;)">yes</choice>
+      <choice value="">no</choice>
+      <default>NOT match(file, "\/system\/default\/")</default>
+    </input>
+  </fieldset>
+  <search id="base_btool">
+    <query>| btool $conf$ | where sos_server="$host$"</query>
+    <earliest>0</earliest>
+    <latest></latest>
+  </search>
+  <row>
+    <panel>
+      <html>
+      <div>Latest .spec file for <b>$conf$.conf</b> can be found at <a href="https://docs.splunk.com/Documentation/Splunk/latest/Admin/$conf$conf" target="_blank">https://docs.splunk.com/Documentation/Splunk/latest/Admin/$conf$conf</a>
+        </div>
+    </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <search base="base_btool">
+          <query>| stats count | eval count=tostring(count, "commas")</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">total stanzas</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search base="base_btool">
+          <query>| stats dc(app)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">total contributing apps</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search base="base_btool">
+          <query>| `parse_btool_output`| stats dc(file)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">total contributing files</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search base="base_btool">
+          <query>| stats sum(linecount) AS sum | eval sum=tostring(sum, "commas")</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">total settings</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table id="v_btool_default_table">
+        <title>[default] stanza</title>
+        <search base="base_btool">
+          <query>| where stanza="default" | `parse_btool_output` | where NOT match(_raw, "\[default\]") | where $exclude_default$ | eval key=if(isnull(key),"",key) | eval value=if(isnull(value),"",value) | eval conf="$conf$.conf" | lookup splunk_settings_check conf stanza setting AS key | eval setting_status=case(setting=="[default]", null(), setting_status="NONE", "elevated",1==1, setting_status)   | table file, setting_status, setting</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">none</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">20</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>contributing apps</title>
+        <search base="base_btool">
+          <query>| `parse_btool_output` | where $exclude_default$ | stats dc(stanza) AS stanza_count sum(eval(if(isnull(key),0,1))) AS setting_count by app
+
+| sort - setting_count</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">none</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">20</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>"odd" system local settings</title>
+        <search base="base_btool">
+          <query>| `parse_btool_output` | where match(file, "\/system\/local\/") AND NOT match(setting, "^(\[|host)")  | table file, stanza, setting</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">none</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">20</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="multiselect" token="app_filter" searchWhenChanged="true">
+        <label>App filter:</label>
+        <choice value="*">All</choice>
+        <search base="base_btool">
+          <query>| stats count by app</query>
+        </search>
+        <fieldForLabel>app</fieldForLabel>
+        <fieldForValue>app</fieldForValue>
+        <default>*</default>
+        <prefix>(</prefix>
+        <suffix>)</suffix>
+        <valuePrefix>app="</valuePrefix>
+        <valueSuffix>"</valueSuffix>
+        <delimiter> OR </delimiter>
+      </input>
+      <table id="tmy_mv_table">
+        <search base="base_btool">
+          <query>| `parse_btool_output` | rex field=file "(default|local)\/(?&lt;conf&gt;.*)$" 
+
+| search $app_filter$ | where $exclude_default$
+
+| eval key=if(isnull(key),"",key) | eval value=if(isnull(value),"",value) 
+
+| lookup splunk_settings_check conf stanza setting AS key | eval setting_status=if(setting_status="NONE","elevated",setting_status) 
+
+| stats dc(eval(if(key=="",null(),key))) AS setting_count list(eval(if(key=="",null(),file))) AS file list(eval(if(key=="",null(),setting_status))) AS status list(key) AS key list(value) AS value by sos_server, stanza, app</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">none</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">20</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="text" token="search_filter" searchWhenChanged="true">
+        <label>Search filter:</label>
+        <default>*</default>
+      </input>
+      <event>
+        <title>raw btool output</title>
+        <search base="base_btool">
+          <query>| search $search_filter$</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">0</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="list.drilldown">full</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.wrap">1</option>
+        <option name="type">list</option>
+        <option name="count">10</option>
+        <fields>["host","source","sourcetype"]</fields>
+      </event>
+    </panel>
+  </row>
+</form>

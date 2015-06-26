@@ -1,0 +1,35 @@
+<form>
+  <label>Configuration settings to review</label>
+  <fieldset submitButton="true" autoRun="true">
+    <input type="dropdown" token="conf">
+      <label>Conf:</label>
+      <search>
+        <query>| inputlookup splunk_config_files.csv | rex field=name "(?&lt;conf&gt;[^\.]+)"</query>
+        <earliest>0</earliest>
+      </search>
+      <fieldForLabel>name</fieldForLabel>
+      <fieldForValue>conf</fieldForValue>
+      <default>props</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table id="tmy_mv_table">
+        <title>below list shows "non-typical" or "issue" config settings</title>
+        <search id="base_btool">
+          <query>| btool $conf$   |  multikv noheader=true | rex "^(?&lt;file&gt;\S+)\s+" | rex field=file "(default|local)\/(?&lt;conf&gt;.*)$"   | where NOT match(file, "\/system\/default\/") AND app!="learned"   | rex "\s+(?=[^\[])(?&lt;key&gt;\S+)\s*=\s*(?&lt;value&gt;.*)$" | eval key=if(isnull(key),"",key) | eval value=if(isnull(value),"",value)    | lookup splunk_settings_check conf stanza setting AS key | eval setting_status=if(setting_status="NONE","elevated",setting_status) | where setting_status !="low" AND key !=""  | stats dc(eval(if(key=="",null(),key))) AS setting_count values(file) values(setting_status) AS status values(eval(key." = ".value)) AS setting values(sos_server) dc(stanza) AS stanza_count by conf</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">row</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">20</option>
+        <drilldown>
+          <link target="_blank">btool_detail?form.host=$row.sos_server$&amp;form.conf=$conf$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>

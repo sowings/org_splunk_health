@@ -1,0 +1,164 @@
+<dashboard>
+  <label>Report (SavedSearch) inventory</label>
+  <description>Numbers across all search head peers, according to DMC</description>
+  <search id="base_all_sh_saved_searches">
+    <query>| rest splunk_server_group=dmc_group_search_head /servicesNS/-/-/saved/searches</query>
+  </search>
+  <row>
+    <panel>
+      <single>
+        <title>Number of reports</title>
+        <search base="base_all_sh_saved_searches">
+          <query>| stats dc(title)</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">distinct names</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Shared reports</title>
+        <search base="base_all_sh_saved_searches">
+          <query>| where 'eai:acl.sharing'!="user" | stats dc(title)</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">distinct names</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Private reports</title>
+        <search base="base_all_sh_saved_searches">
+          <query>| where 'eai:acl.sharing'="user" | stats dc(title)</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">distinct names</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Scheduled reports</title>
+        <search base="base_all_sh_saved_searches">
+          <query>| where is_scheduled=1 AND disabled=0 | stats dc(title)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">distinct names</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    
+      <panel>
+      <single>
+        <title>Scheduled reports - noresults</title>
+        <search base="base_no_results">
+          <query>| stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">with no results in past 60 days</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    
+    
+    <panel>
+      <single>
+        <title>Alerting reports</title>
+        <search base="base_all_sh_saved_searches">
+          <query>| where 'action.email'=1 AND is_scheduled=1 AND disabled=0 | stats dc(title)</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">distinct names</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Search location by app</title>
+        <search base="base_all_sh_saved_searches">
+          <query>| rename eai:acl.app AS app | stats count by app</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.axisY2.enabled">undefined</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Search location by sharing</title>
+        <search base="base_all_sh_saved_searches">
+          <query>| rename eai:acl.sharing AS sharing | stats count by sharing</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.axisY2.enabled">undefined</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Details</title>
+        <search base="base_all_sh_saved_searches">
+          <query>| stats count values(splunk_server) values(disabled) AS is_disabled values(is_scheduled) AS is_scheduled values(eai:acl.app) AS app by title</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="wrap">undefined</option>
+        <option name="rowNumbers">undefined</option>
+        <option name="drilldown">row</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Orphaned reports (owner not defined in splunk)</title>
+        <search>
+          <query>| rest splunk_server_group=dmc_group_search_head /servicesNS/-/-/saved/searches | rename eai:acl.owner AS user | where user!="nobody" | stats count, list(is_scheduled) AS is_scheduled, list(eai:acl.app) AS app list(title) AS reports by user
+ 
+| eval is_orphan="true"
+| join type=outer user [| rest splunk_server_group=dmc_group_search_head /services/authentication/users | stats count by title | rename title AS user | eval is_orphan="false"]
+
+| where is_orphan="true"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Scheduled reports that have returned no results past 60 days</title>
+        <search id="base_no_results">
+          <query>| rest splunk_server_group=dmc_group_search_head /servicesNS/-/-/saved/searches | where is_scheduled=1 AND disabled=0 | stats values(splunk_server) by title, eai:acl.owner, eai:acl.app, cron_schedule
+
+| join type=outer title [search index=_internal sourcetype=scheduler result_count earliest=-60d@d | extract pairdelim=",", kvdelim="=", auto=f | stats avg(result_count) min(result_count) max(result_count), sparkline(avg(result_count)) AS sparkline avg(run_time) by savedsearch_name | rename savedsearch_name AS title]
+
+| makemv delim="," setsv=true sparkline
+| where 'max(result_count)' = 0
+| sort - avg(run_time)</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="wrap">undefined</option>
+        <option name="rowNumbers">undefined</option>
+        <option name="drilldown">row</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

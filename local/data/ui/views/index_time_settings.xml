@@ -1,0 +1,175 @@
+<form>
+  <label>Index-time configurations</label>
+  <description>Use the following dashboard to identify and troubleshoot indextime operations. Particularly useful if seeing issues with typing pipeline</description>
+  <fieldset submitButton="true" autoRun="true">
+    <input type="dropdown" token="splunk_group">
+      <label>DMC Group:</label>
+      <search>
+        <query>| inputlookup assets.csv | stats count by search_group</query>
+      </search>
+      <fieldForLabel>search_group</fieldForLabel>
+      <fieldForValue>search_group</fieldForValue>
+      <default>dmc_group_indexer</default>
+    </input>
+    <input type="dropdown" token="host">
+      <label>Host:</label>
+      <search>
+        <query>| inputlookup assets.csv | where search_group="$splunk_group$" | stats count by host</query>
+      </search>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+      <default>vmb.local</default>
+    </input>
+    <input type="dropdown" token="exclude_default">
+      <label>Exclude system/default:</label>
+      <choice value="NOT match(file, &quot;\/system\/default\/&quot;)">yes</choice>
+      <choice value="">no</choice>
+      <default>NOT match(file, "\/system\/default\/")</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <input type="time" token="timepicker_index_cpu">
+        <label></label>
+        <default>
+          <earliest>-4h@m</earliest>
+          <latest>now</latest>
+        </default>
+      </input>
+      <chart>
+        <title>Estimated CPU Usage per Splunk Processor</title>
+        <search>
+          <query>index=_internal host="$host$" source=*metrics.log sourcetype=splunkd group=pipeline NOT processor=sendout | timechart minspan=30s per_second(eval(cpu_seconds*100)) AS pctCPU by processor useother=false limit=15</query>
+          <earliest>$timepicker_index_cpu.earliest$</earliest>
+          <latest>$timepicker_index_cpu.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Index time operations by app</title>
+        <search base="indextime_transforms">
+          <query>| stats count by props_app</query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.axisY2.enabled">undefined</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Index time operations by props stanza</title>
+        <search base="indextime_transforms">
+          <query>| stats count by props_stanza</query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.axisY2.enabled">undefined</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Index time operations by possible justification</title>
+        <search base="indextime_transforms">
+          <query>| stats count by possible_justification</query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.axisY2.enabled">undefined</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Settings</title>
+        <search id="indextime_transforms">
+          <query>| btool props | where sos_server="$host$" |  multikv noheader=true   | rex "^(?&lt;file&gt;\S+)\s+" | rex field=file "(default|local)\/(?&lt;conf&gt;.*)$" | where $exclude_default$ | rex "\s+(?=[^\[])(?&lt;key&gt;\S+)\s*=\s*(?&lt;value&gt;.*)$" | eval key=if(isnull(key),"",key) | eval value=if(isnull(value),"",split(value, ","))   | where match(key, "^TRANSFORMS-")    | table app, file, stanza, key, value | rename value AS transforms_stanza * AS props_*    | mvexpand transforms_stanza | eval transforms_stanza=trim(transforms_stanza) | eventstats count AS props_stanza_transforms_count by props_stanza  | join transforms_stanza type=outer [ | btool transforms | where sos_server="$host$" | multikv noheader=true | rex "^(?&lt;file&gt;\S+)\s+" | where $exclude_default$ | rex "\s+(?=[^\[])(?&lt;key&gt;\S+)\s*=\s*(?&lt;value&gt;.*)$" | eval key=if(isnull(key),"",key) | eval value=if(isnull(value),"",value) | eval setting=key." = ".value | stats list(eval(if(key=="",null(),"%%%".setting))) AS transforms_settings list(eval(if(key=="",null(),"%%%".file))) AS transforms_file by stanza | rename stanza AS transforms_stanza]  | foreach transforms_* [makemv delim="%%%" &lt;&lt;FIELD&gt;&gt;]  | table props_* transforms_* | sort - props_stanza_transforms_count   | eval possible_justification = case( match(transforms_settings, "FORMAT\s*=\s*host::"), "host re-mapping", match(transforms_settings, "FORMAT\s*=\s*sourcetype::"), "sourcetype re-mapping", match(transforms_settings, "FORMAT\s*=\s*index::"), "index re-mapping", match(transforms_settings, "FORMAT\s*=\s*source::"), "source re-mapping", match(transforms_settings, "(?:DEST_KEY\s*=\s*_meta)|(?:WRITE_META\s*=\s*(?i:true|1))"), "indexed field mapping", isnull(transforms_settings) OR transforms_settings=="", "no transforms settings have been found", 1==1, "no idea")</query>
+          <earliest>0</earliest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,132 @@
+<dashboard>
+  <label>Deployment server</label>
+  <row>
+    <panel>
+      <single>
+        <search base="base_ds_rest">
+          <query>| stats dc(splunk_server)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">deployment servers</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search base="base_ds_rest">
+          <query>| stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">clients</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search base="base_ds_rest">
+          <query>| where issue_found="yes" | stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">clients with issues</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search base="base_orphan_clients">
+          <query>| stats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">unmanaged clients</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>clients by ds_server</title>
+        <search base="base_ds_rest">
+          <query>| stats count by splunk_server</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.axisY2.enabled">undefined</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>clients by os</title>
+        <search base="base_ds_rest">
+          <query>| stats count by utsname</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.axisY2.enabled">undefined</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>clients by version</title>
+        <search>
+          <query>index=_internal source="*metrics.log" group=tcpin_connections earliest=-24h | stats dc(guid) AS count by version</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.axisY2.enabled">undefined</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>client details</title>
+        <search id="base_ds_rest">
+          <query>| rest splunk_server_group=dmc_group_deployment_server /services/deployment/server/clients | fields - applications.* | fields + hostname, dns, ip, name, guid, splunk_server, averagePhoneHomeInterval, utsname, lastPhoneHomeTime | eval secondsAgo=now()-lastPhoneHomeTime | convert ctime(lastPhoneHomeTime) | eval secondsAgoPretty=tostring(abs(secondsAgo), "duration") | sort - secondsAgo | eval issue_found = if(secondsAgo&gt;86400, "yes", "no") | fields - secondsAgo</query>
+          <earliest>0</earliest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">none</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>derived by looking at metrics.log tcpin_connections for past 24 hours, then correlating clients agains what DS knows about</html>
+      <table>
+        <title>unmanaged clients (DS doesn't know about them) last 24 hours</title>
+        <search id="base_orphan_clients">
+          <query>index=_internal sourcetype="splunkd" source="*metrics.log" group=tcpin_connections fwdType=uf | stats count latest(_time) AS last_metrics_event values(os) AS os values(version) AS version mean(tcp_KBps) mean(tcp_eps) by hostname, guid | fields - count | eval is_managed="false" | convert ctime(last_metrics_event)  | rex field=hostname "^(?&lt;normalized_hostname&gt;[^\.]+)" | eval normalized_hostname=lower(normalized_hostname)  | join guid type=outer [| rest splunk_server_group=dmc_group_deployment_server /services/deployment/server/clients | eval is_managed="true" | rex field=hostname "^(?&lt;normalized_hostname&gt;[^\.]+)" | eval normalized_hostname=lower(normalized_hostname) | rename name AS guid | fields + normalized_hostname, is_managed, guid] | where is_managed="false" | sort - mean(tcp_KBps)</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">none</option>
+        <option name="dataOverlayMode">heatmap</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>hosts with duplicate GUID - last 24 hours</title>
+        <search>
+          <query>index=_internal source="*metrics.log" group=tcpin_connections fwdType=uf connectionType=cooked | stats dc(hostname) values(hostname) values(version) values(ip) values(os) by guid | where 'dc(hostname)' &gt; 1 | sort - dc(hostname)</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

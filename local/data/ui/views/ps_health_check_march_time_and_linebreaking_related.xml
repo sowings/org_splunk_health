@@ -1,0 +1,116 @@
+<form>
+  <label>parsing_issues</label>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <chart>
+        <search>
+          <query>index=_internal sourcetype=splunkd component=LineBreakingProcessor OR component=DateParserVerbose OR component=Aggregator* | timechart count by component</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>date parsing issues</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd component=DateParserVerbose log_level=WARN | rex "Context:\s+source::(?&lt;data_source&gt;[^\|]+)\|host::(?&lt;data_host&gt;[^\|]+)\|(?&lt;data_sourcetype&gt;[^\|]+)" | stats count values(data_source) values(data_host) dc(data_source) dc(data_host) BY data_sourcetype  | sort - count</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="dropdown" token="exclude_known_truncation" searchWhenChanged="true">
+        <label>Exclude reviewed "known bad" data types</label>
+        <choice value="NOT data_sourcetype=&quot;mysourcetype&quot;">yes</choice>
+        <choice value="*">no</choice>
+        <default>NOT data_sourcetype="mysourcetype"</default>
+      </input>
+      <html>
+        "known bad" sourcetypes are concidered the following:
+        <ol>
+          <li>mysourcetype - 3/30/15 vs@splunk.com - list notes for any sourcetypes that might need to be exlucded</li>
+          
+        </ol>
+      </html>
+      <table>
+        <title>truncation issues</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd component=LineBreakingProcessor | extract | search $exclude_known_truncation$ | rex "because\slimit\sof\s(?&lt;limit&gt;\S+).*&gt;=\s(?&lt;actual&gt;\S+)" | stats count avg(actual) max(actual) values(data_source) values(data_host) dc(data_source) dc(data_host) BY data_sourcetype, limit | eval avg(actual)=round('avg(actual)') | sort - count</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">row</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">5</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="dropdown" token="exclude_too_many" searchWhenChanged="true">
+        <label>Exclude "too many events with same timestamp" messages</label>
+        <choice value="NOT &quot;Too many events * with the same timestamp&quot;">yes</choice>
+        <choice value="*">no</choice>
+        <default>NOT "Too many events * with the same timestamp"</default>
+      </input>
+      <html>Per <a href="http://answers.splunk.com/answers/303/whats-max-events-i-can-have-timestamped-with-a-particular-second-millisecond.html">http://answers.splunk.com/answers/303/whats-max-events-i-can-have-timestamped-with-a-particular-second-millisecond.html</a>
+      </html>
+      <table>
+        <title>line merging issues</title>
+        <search>
+          <query>index=_internal sourcetype=splunkd component=Aggregator* $exclude_too_many$ | rex "\s-\s(?&lt;message_content&gt;.*?)\s-\sdata" | extract | stats count values(message_content) values(data_source) values(data_host) dc(data_source), dc(data_host) BY data_sourcetype  | sort - count</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">cell</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">5</option>
+      </table>
+    </panel>
+  </row>
+</form>

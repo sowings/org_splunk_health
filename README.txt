@@ -1,0 +1,6 @@
+#vs@splunk.com
+#splunk health check app
+
+This app relies on DMC to be setup and configured. assets.csv file from the DMC app needs to be shared globally.
+
+

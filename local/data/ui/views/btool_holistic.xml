@@ -1,0 +1,84 @@
+<form script="table_icons_rangemap_now_with_mv.js" stylesheet="table_decorations.css">
+  <label>Configuration overview</label>
+  <fieldset submitButton="true" autoRun="true">
+    <input type="dropdown" token="splunk_group">
+      <label>DMC Group:</label>
+      <search>
+        <query>| inputlookup assets.csv | stats count by search_group</query>
+      </search>
+      <fieldForLabel>search_group</fieldForLabel>
+      <fieldForValue>search_group</fieldForValue>
+      <default>dmc_group_indexer</default>
+    </input>
+    <input type="dropdown" token="conf">
+      <label>Conf:</label>
+      <search>
+        <query>| inputlookup splunk_config_files.csv | rex field=name "(?&lt;conf&gt;[^\.]+)"</query>
+        <earliest>0</earliest>
+      </search>
+      <fieldForLabel>name</fieldForLabel>
+      <fieldForValue>conf</fieldForValue>
+      <default>web</default>
+    </input>
+    <input type="dropdown" token="exclude_learned">
+      <label>Exclude learned app:</label>
+      <choice value="app!=&quot;learned&quot; AND ">yes</choice>
+      <choice value="">no</choice>
+      <default>yes</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <html>
+        <div>In a distributed environment, ideally, settings should be the same across nodes that perform same role. Deviation in configuration settings may indicate a configuration issue and should be reviewed.<br/>
+          <b>Click</b> on the particular row to drill down into node settings. Note, process relies on Splunk <i>btool</i> for configuration merging; <i>btool</i> reads settings from the file system, which might not be what is currently in Splunk memory.</div>
+    </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <search base="base_btool">
+          <query>| stats dc(sos_server) AS count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Splunk servers</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search base="base_btool">
+          <query>| search status!="low*" | stats dc(sos_server) AS count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">possibly misconfigured servers</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table id="tmy_mv_table">
+        <search id="base_btool">
+          <query>| btool $conf$ | where $exclude_learned$ ([| inputlookup assets.csv | where search_group="$splunk_group$" | stats count by host | fields + host | rename host AS sos_server | format])  |  stats dc(app) AS app_count count AS stanza_count sum(linecount) AS setting_count by sos_server | eventstats mode(stanza_count) AS mode_st mode(setting_count) AS mode_lc mode(app_count) AS mode_app
+
+| eval status=if(mode_st!=stanza_count OR mode_lc!=setting_count OR mode_app!=app_count,"elevated!!!deviation found", "low!!!ok") 
+| eval app_deviation=app_count-mode_app | eval setting_deviation=setting_count-mode_lc | eval stanza_deviation=stanza_count-mode_st
+
+| fields - mode* | sort status</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="drilldown">row</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">20</option>
+        <drilldown>
+          <link target="_blank">btool_detail?form.splunk_group=$splunk_group$&amp;form.host=$row.sos_server$&amp;form.conf=$conf$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>

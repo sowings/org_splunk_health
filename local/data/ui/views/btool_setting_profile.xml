@@ -1,0 +1,42 @@
+<dashboard>
+  <label>Profiled .conf settings inventory</label>
+  <row>
+    <panel>
+      <single>
+        <title>profiled .conf's</title>
+        <search base="profiled_settings">
+          <query>| stats dc(conf)</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>profiled settings</title>
+        <search base="profiled_settings">
+          <query>| stats count</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Profiled settings</title>
+        <search id="profiled_settings">
+          <query>| inputlookup splunk_settings_check</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="count">25</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

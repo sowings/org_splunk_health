@@ -1,0 +1,14 @@
+<dashboard>
+  <label>sub-optimal config</label>
+  <row>
+    <panel>
+      <html>
+        <h2>todo..</h2>
+        <ul>
+          <li>show sourcetypes/sources with data injest props "best practices" missing</li>
+          <li>other "recomended" settings??</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+</dashboard>
