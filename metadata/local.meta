@@ -4,8 +4,8 @@ version = 6.2.1
 modtime = 1434768479.152904000
 
 [nav/default]
-version = 6.2.3
-modtime = 1434774529.096224000
+version = 6.2.5
+modtime = 1439776164.706058000
 
 [views/index_time_settings]
 owner = admin

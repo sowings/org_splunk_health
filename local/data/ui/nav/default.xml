@@ -1,20 +1,37 @@
 <nav search_view="search" color="#6991AC">
   <view name="overview" default="true" /> 
   
-  <collection label="Component check">
-    <view source="all" match="ps_health_check_march_"/>
-    <view name="output_issues" />
+  <collection label="Data ingest">
+    <view name="audit_data_ingest" />
+    <view name="audit_transforms" />
   </collection>
   
+  <collection label="Artifact Inventory">
+    <view name="inventory_reports" />
+    <view name="intentory_dashboards" />
+  </collection> 
+  
+  <collection label="Component Health">
+    <view name="audit_deployment_server" />
+    <view name="audit_output_issues" />
+  </collection> 
+  
+  <collection label="Component check">
+    <view name="audit_splunkd_log" />
+    <view name="audit_expensive_searches" />
+    <view name="audit_time_ranges" />
+  </collection>
   
   <collection label="Configuration check">
     <view name="btool_holistic" />
     <view name="btool_detail" />
     <view name="btool_to_review" />
-    <view name="index_time_settings" />
     <view name="btool_setting_profile" />
-    <view name="suboptimal_config" />
   </collection>
+  
+  <collection label="TBD">
+    <view name="suboptimal_config" />
+  </collection> 
   
   <collection label="Search">
   	<view name="search" />
