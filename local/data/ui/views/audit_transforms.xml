@@ -18,7 +18,6 @@
       </search>
       <fieldForLabel>host</fieldForLabel>
       <fieldForValue>host</fieldForValue>
-      <default>vmb.local</default>
     </input>
     <input type="dropdown" token="exclude_default">
       <label>Exclude system/default:</label>

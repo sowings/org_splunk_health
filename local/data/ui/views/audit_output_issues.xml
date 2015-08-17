@@ -1,19 +1,50 @@
 <form script="table_icons_rangemap_now_with_mv.js" stylesheet="table_decorations.css">
-  <label>output_issues</label>
+  <label>Forwarder outputs</label>
+  <fieldset submitButton="false">
+    <input type="time" token="timerange">
+      <label>Timerange:</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="fwd_output_issues" searchWhenChanged="true">
+      <label>Show issues only:</label>
+      <choice value="indexer_deviation!=0">yes</choice>
+      <choice value="1==1">no</choice>
+      <default>1==1</default>
+    </input>
+  </fieldset>
   <row>
     <panel>
-      <input type="dropdown" token="fwd_output_issues" searchWhenChanged="true">
-        <label>Show issues only:</label>
-        <choice value="indexer_deviation!=0">yes</choice>
-        <choice value="1==1">no</choice>
-        <default>1==1</default>
-      </input>
+      <single>
+        <title>Total clients</title>
+        <search base="base_connections">
+          <query>| stats count</query>
+        </search>
+        <option name="linkView">search</option>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Issue clients</title>
+        <search base="base_connections">
+          <query>| stats sum(eval(if(indexer_deviation!=0, 1, 0))) AS count</query>
+        </search>
+        <option name="linkView">search</option>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
       <table id="tmy_mv_table">
         <title>Forwarder output issues (last 24 hours) -  forwarders not sending data to all indexers</title>
-        <search>
+        <search id="base_connections">
           <query>index=_internal sourcetype=splunkd TcpOutputProc Connected | stats dc(idx) AS idx_count values(idx) by host  | eventstats mode(idx_count) AS mode_idx | eval status=if(mode_idx!=idx_count, "elevated!!!deviation found", "low!!!ok")  | eval indexer_deviation=idx_count-mode_idx  | fields - mode* | sort status  | where $fwd_output_issues$</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>

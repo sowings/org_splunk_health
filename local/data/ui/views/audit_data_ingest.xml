@@ -1,5 +1,5 @@
 <form>
-  <label>parsing_issues</label>
+  <label>Data ingest issues</label>
   <fieldset submitButton="false">
     <input type="time" token="field1">
       <label></label>
@@ -11,8 +11,43 @@
   </fieldset>
   <row>
     <panel>
+      <single>
+        <title>Date parsing issues</title>
+        <search base="base_dateparser">
+          <query>| stats dc(data_sourcetype)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+        <option name="underLabel">sourcetype (s)</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Truncation issues</title>
+        <search base="base_linebreaker">
+          <query>| stats dc(data_sourcetype)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">sourcetype (s)</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Line merging issues</title>
+        <search base="base_aggregator">
+          <query>| stats dc(data_sourcetype)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">sourcetype (s)</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
       <chart>
-        <search>
+        <search id="base_all">
           <query>index=_internal sourcetype=splunkd component=LineBreakingProcessor OR component=DateParserVerbose OR component=Aggregator* | timechart count by component</query>
           <earliest>$field1.earliest$</earliest>
           <latest>$field1.latest$</latest>
@@ -45,7 +80,7 @@
     <panel>
       <table>
         <title>date parsing issues</title>
-        <search>
+        <search id="base_dateparser">
           <query>index=_internal sourcetype=splunkd component=DateParserVerbose log_level=WARN | rex "Context:\s+source::(?&lt;data_source&gt;[^\|]+)\|host::(?&lt;data_host&gt;[^\|]+)\|(?&lt;data_sourcetype&gt;[^\|]+)" | stats count values(data_source) values(data_host) dc(data_source) dc(data_host) BY data_sourcetype  | sort - count</query>
           <earliest>$field1.earliest$</earliest>
           <latest>$field1.latest$</latest>
@@ -75,7 +110,7 @@
       </html>
       <table>
         <title>truncation issues</title>
-        <search>
+        <search id="base_linebreaker">
           <query>index=_internal sourcetype=splunkd component=LineBreakingProcessor | extract | search $exclude_known_truncation$ | rex "because\slimit\sof\s(?&lt;limit&gt;\S+).*&gt;=\s(?&lt;actual&gt;\S+)" | stats count avg(actual) max(actual) values(data_source) values(data_host) dc(data_source) dc(data_host) BY data_sourcetype, limit | eval avg(actual)=round('avg(actual)') | sort - count</query>
           <earliest>$field1.earliest$</earliest>
           <latest>$field1.latest$</latest>
@@ -100,7 +135,7 @@
       </html>
       <table>
         <title>line merging issues</title>
-        <search>
+        <search id="base_aggregator">
           <query>index=_internal sourcetype=splunkd component=Aggregator* $exclude_too_many$ | rex "\s-\s(?&lt;message_content&gt;.*?)\s-\sdata" | extract | stats count values(message_content) values(data_source) values(data_host) dc(data_source), dc(data_host) BY data_sourcetype  | sort - count</query>
           <earliest>$field1.earliest$</earliest>
           <latest>$field1.latest$</latest>

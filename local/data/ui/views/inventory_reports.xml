@@ -1,5 +1,5 @@
-<dashboard>
-  <label>Report (SavedSearch) inventory</label>
+<form>
+  <label>Report Inventory</label>
   <description>Numbers across all search head peers, according to DMC</description>
   <search id="base_all_sh_saved_searches">
     <query>| rest splunk_server_group=dmc_group_search_head /servicesNS/-/-/saved/searches</query>
@@ -52,20 +52,17 @@
         <option name="linkView">search</option>
       </single>
     </panel>
-    
-      <panel>
+    <panel>
       <single>
         <title>Scheduled reports - noresults</title>
         <search base="base_no_results">
           <query>| stats count</query>
         </search>
         <option name="drilldown">none</option>
-        <option name="underLabel">with no results in past 60 days</option>
+        <option name="underLabel">with no results in past 30 days</option>
         <option name="linkView">search</option>
       </single>
     </panel>
-    
-    
     <panel>
       <single>
         <title>Alerting reports</title>
@@ -107,16 +104,24 @@
   </row>
   <row>
     <panel>
+      <input type="dropdown" token="scheduled_only" searchWhenChanged="true">
+        <label>Show scheduled and enabled only:</label>
+        <choice value="disabled=0 AND is_scheduled=1">yes</choice>
+        <choice value="1==1">no</choice>
+        <default>1==1</default>
+      </input>
       <table>
         <title>Details</title>
         <search base="base_all_sh_saved_searches">
-          <query>| stats count values(splunk_server) values(disabled) AS is_disabled values(is_scheduled) AS is_scheduled values(eai:acl.app) AS app by title</query>
-          <earliest>0</earliest>
-          <latest></latest>
+          <query>| where $scheduled_only$ | stats count values(splunk_server) values(disabled) AS is_disabled values(is_scheduled) AS is_scheduled values(eai:acl.app) AS app values(eai:acl.owner) AS owner BY title
+
+| sort -count</query>
         </search>
         <option name="wrap">undefined</option>
         <option name="rowNumbers">undefined</option>
         <option name="drilldown">row</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
       </table>
     </panel>
   </row>
@@ -143,22 +148,17 @@
     </panel>
     <panel>
       <table>
-        <title>Scheduled reports that have returned no results past 60 days</title>
+        <title>Scheduled reports that have returned no results past 30 days</title>
         <search id="base_no_results">
-          <query>| rest splunk_server_group=dmc_group_search_head /servicesNS/-/-/saved/searches | where is_scheduled=1 AND disabled=0 | stats values(splunk_server) by title, eai:acl.owner, eai:acl.app, cron_schedule
-
-| join type=outer title [search index=_internal sourcetype=scheduler result_count earliest=-60d@d | extract pairdelim=",", kvdelim="=", auto=f | stats avg(result_count) min(result_count) max(result_count), sparkline(avg(result_count)) AS sparkline avg(run_time) by savedsearch_name | rename savedsearch_name AS title]
-
-| makemv delim="," setsv=true sparkline
-| where 'max(result_count)' = 0
-| sort - avg(run_time)</query>
+          <query>| rest splunk_server_group=dmc_group_search_head /servicesNS/-/-/saved/searches | where is_scheduled=1 AND disabled=0 | stats values(splunk_server) by title, eai:acl.owner, eai:acl.app, cron_schedule  | join type=outer title [search index=_internal sourcetype=scheduler result_count earliest=-60d@d | extract pairdelim=",", kvdelim="=", auto=f | stats avg(result_count) min(result_count) max(result_count), sparkline(avg(result_count)) AS sparkline avg(run_time) by savedsearch_name | rename savedsearch_name AS title]  | makemv delim="," setsv=true sparkline | where 'max(result_count)' = 0 | sort - avg(run_time)</query>
           <earliest>0</earliest>
-          <latest></latest>
         </search>
         <option name="wrap">undefined</option>
         <option name="rowNumbers">undefined</option>
         <option name="drilldown">row</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
       </table>
     </panel>
   </row>
-</dashboard>
+</form>

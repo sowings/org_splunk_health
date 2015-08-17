@@ -68,3 +68,27 @@ modtime = 1434773555.402378000
 owner = admin
 version = 6.2.3
 modtime = 1434774496.393526000
+
+[views/audit_data_ingest]
+version = 6.2.5
+modtime = 1439778793.737673000
+
+[views/inventory_reports]
+version = 6.2.5
+modtime = 1439780577.226195000
+
+[views/audit_transforms]
+version = 6.2.5
+modtime = 1439780301.289916000
+
+[views/intentory_dashboards]
+version = 6.2.5
+modtime = 1439780609.077311000
+
+[views/audit_output_issues]
+version = 6.2.5
+modtime = 1439781708.849928000
+
+[views/audit_expensive_searches]
+version = 6.2.5
+modtime = 1439783272.913081000
