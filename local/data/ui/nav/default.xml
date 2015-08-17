@@ -33,6 +33,20 @@
     <view name="suboptimal_config" />
   </collection> 
   
+  <collection label="akorn app">
+    <view name="deployment_status" />
+    <view name="indexes_and_fields" />
+    <view name="search_detail" />
+    <view name="license_usage" />
+    <view name="user_activity" />
+    <view name="health_status" />
+    <view name="saved_search_detail" />
+    <view name="scheduler_activity" />
+    <view name="indexes" />
+    <view name="resource_usage" />
+    <view name="search_activity" />
+  </collection> 
+  
   <collection label="Search">
   	<view name="search" />
     <view name="data_models" />
